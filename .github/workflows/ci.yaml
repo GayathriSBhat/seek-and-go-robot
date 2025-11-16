@@ -1,0 +1,36 @@
+name: Run Tests on "test" Label
+
+on:
+  pull_request:
+    types: [labeled]
+  issues:
+    types: [labeled]
+
+jobs:
+  run-tests-on-label:
+    if: github.event.label.name == 'test'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up ROS 2 Humble
+        run: |
+          sudo apt update
+          sudo apt install -y locales
+          sudo locale-gen en_US en_US.UTF-8
+          sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+          sudo apt install -y software-properties-common
+          sudo add-apt-repository universe
+          sudo apt update && sudo apt install -y curl gnupg2 lsb-release
+          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+          sudo apt update
+          sudo apt install -y ros-humble-desktop python3-colcon-common-extensions
+          echo "source /opt/ros/humble/setup.bash" >> $GITHUB_ENV
+
+      - name: Source ROS 2 and build/run tests
+        run: |
+          source /opt/ros/humble/setup.bash
+          chmod +x ./run_tests.sh
+          ./run_tests.sh
